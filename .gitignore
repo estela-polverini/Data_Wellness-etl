@@ -1,10 +1,84 @@
-﻿.venv/
+﻿# =========================
+# PYTHON
+# =========================
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+*.so
+
+# Distribuição / build
+build/
+dist/
+*.egg-info/
+
+# =========================
+# AMBIENTE VIRTUAL
+# =========================
+.venv/
+venv/
+env/
+
+# =========================
+# VARIAVEIS DE AMBIENTE
+# =========================
 .env
+.env.*
+
+# =========================
+# CREDENCIAIS (GCP / BIGQUERY)
+# =========================
+credentials/
+*.json
+
+# ⚠️ Se quiser ser mais específico:
+# !package.json  (exemplo de exceção)
+# !other_safe.json
+
+# =========================
+# LOGS
+# =========================
 *.log
+logs/
+
+# =========================
+# DADOS LOCAIS (ETL)
+# =========================
+*.csv
+*.parquet
+*.xlsx
+*.tmp
+
+# (opcional - se quiser versionar dados, remova essas linhas)
+
+# =========================
+# DOCKER
+# =========================
+docker-compose.override.yml
+
+# =========================
+# IDE / EDITOR
+# =========================
 .vscode/
 .idea/
+*.swp
+*.swo
+
+# =========================
+# SISTEMA OPERACIONAL
+# =========================
 .DS_Store
 Thumbs.db
-credentials/
+
+# =========================
+# TESTES
+# =========================
+.pytest_cache/
+.coverage
+htmlcov/
+
+# =========================
+# MISC
+# =========================
+*.bak
+*.old
