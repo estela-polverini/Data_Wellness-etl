@@ -1,7 +1,9 @@
 from google.cloud import bigquery
 import pandas as pd
 import os
+import numpy as np
 from dotenv import load_dotenv
+from pandas import DataFrame
 
 load_dotenv()
 
@@ -12,22 +14,107 @@ DATASET = os.getenv("BQ_DATASET")
 def get_bq_client():
     return bigquery.Client(project=PROJECT_ID)
 
-def load_to_bq(df, table_name):
+
+def load_to_bq(df: DataFrame, table_name: str):
     client = get_bq_client()
     table_id = f"{client.project}.{DATASET}.{table_name}"
+
     job = client.load_table_from_dataframe(df, table_id)
     job.result()
 
     print(f"Dados enviados para {table_id}")
 
-def extract_from_local():
-    df = pd.read_csv("extract\materdei-data.csv")
+
+def extract_from_local() -> DataFrame:
+    path = r'extract\materdei-data.csv'
+    df = pd.read_csv(path)
+
     print(df.head())
-    print(df.info())
+    df.info()
+    print("Valores nulos:")
+    print(df.isnull().sum())
+
+    return df
+
+
+def calcular_idade(dt_nascimento: pd.Series) -> pd.Series:
+    hoje = pd.Timestamp.today()
+
+    idade = hoje.year - dt_nascimento.dt.year
+    fez_aniversario = (
+        (hoje.month > dt_nascimento.dt.month) |
+        (
+            (hoje.month == dt_nascimento.dt.month) &
+            (hoje.day >= dt_nascimento.dt.day)
+        )
+    )
+
+    idade = idade - (~fez_aniversario)
+
+    return idade
+
+
+def transform_data(df: DataFrame) -> DataFrame:
+    print("Iniciando transformação...")
+
+    #snake case
+    df.columns = (
+        df.columns
+        .str.lower()
+        .str.strip()
+        .str.replace(" ", "_")
+    )
+
+    #idade calculada
+    df["dt_nascimento"] = pd.to_datetime(
+        df["dt_nascimento"],
+        errors="coerce"
+    )
+    df["idade"] = calcular_idade(df["dt_nascimento"])
+    df["idade"] = (
+        df["idade"]
+        .fillna(-1)
+        .astype(int)
+    )
+
+
+    # -1 para cd nulos
+    df["cd_unidade_atendimento"] = (
+        df["cd_unidade_atendimento"]
+        .fillna(-1)
+        .astype(int)
+    )
+
+    # ds_atendimento nulos
+    df["ds_unidade_atendimento"] = (
+        df["ds_unidade_atendimento"]
+        .fillna("Não Informado")
+    )
+
+    #alteração de tipagem
+    df["ano"] = df["ano"].astype(int)
+    df["cd_paciente"] = df["cd_paciente"].astype(int)
+
+    print("Datas inválidas:", df["dt_nascimento"].isna().sum())
+
+    print("Transformação concluída!")
+
+    return df
+
 
 def main():
     print("Inicio do ETL...")
-    extract_from_local()
+
+    df_original = extract_from_local()
+    df_tratado = transform_data(df_original)
+    print(df_tratado.head())
+    df_tratado.info()
+
+
+    #load_to_bq(df_tratado, "materdei")
+
+    print("ETL finalizado!")
+
 
 if __name__ == "__main__":
     main()
